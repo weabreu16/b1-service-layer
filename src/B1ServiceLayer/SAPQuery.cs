@@ -116,14 +116,17 @@ public class SAPQuery<T>
         return this;
     }
 
-    public List<T>? Get()
+    public IEnumerable<T> Get()
         => GetAsync().GetAwaiter().GetResult();
 
-    public async Task<List<T>?> GetAsync()
+    public async Task<IEnumerable<T>> GetAsync()
     {
         var response = await Provider.ExecuteAsync<SapResponse<T>>(BuildRequest());
 
-        return response?.Value;
+        if (response is null)
+            return Enumerable.Empty<T>();
+
+        return response.Value;
     }
 
     public Paged<T>? GetWithCount()
