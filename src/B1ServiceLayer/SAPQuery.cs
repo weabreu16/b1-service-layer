@@ -135,6 +135,20 @@ public class SAPQuery<T>
     public async Task<Paged<T>?> GetWithCountAsync()
         => await Provider.ExecuteAsync<Paged<T>>(BuildRequest(includeInlineCount: true));
 
+    public List<TResult> Apply<TResult>(string applyStatement)
+        => ApplyAsync<TResult>(applyStatement).GetAwaiter().GetResult();
+
+    public async Task<List<TResult>> ApplyAsync<TResult>(string applyStatement, CancellationToken cancellationToken = default)
+    {
+        var request = BuildRequest();
+
+        request.AddQueryParameter("$apply", applyStatement, false);
+
+        var response = await Provider.ExecuteAsync<SapResponse<TResult>>(request, cancellationToken);
+
+        return response!.Value;
+    }
+
     private static string ExtractProperty(Expression expression)
     {
         if (expression is not MemberExpression memberExpression)
