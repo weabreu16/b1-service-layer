@@ -116,15 +116,15 @@ public class SAPQuery<T>
         return this;
     }
 
-    public IEnumerable<T> Get()
+    public ICollection<T> Get()
         => GetAsync().GetAwaiter().GetResult();
 
-    public async Task<IEnumerable<T>> GetAsync()
+    public async Task<ICollection<T>> GetAsync()
     {
         var response = await Provider.ExecuteAsync<SapResponse<T>>(BuildRequest());
 
         if (response is null)
-            return Enumerable.Empty<T>();
+            return Array.Empty<T>();
 
         return response.Value;
     }
@@ -135,10 +135,10 @@ public class SAPQuery<T>
     public async Task<Paged<T>?> GetWithCountAsync()
         => await Provider.ExecuteAsync<Paged<T>>(BuildRequest(includeInlineCount: true));
 
-    public List<TResult> Apply<TResult>(string applyStatement)
+    public ICollection<TResult> Apply<TResult>(string applyStatement)
         => ApplyAsync<TResult>(applyStatement).GetAwaiter().GetResult();
 
-    public async Task<List<TResult>> ApplyAsync<TResult>(string applyStatement, CancellationToken cancellationToken = default)
+    public async Task<ICollection<TResult>> ApplyAsync<TResult>(string applyStatement, CancellationToken cancellationToken = default)
     {
         var request = BuildRequest();
 
