@@ -44,7 +44,7 @@ public class B1Service: IDisposable
     /// </summary>
     /// <typeparam name="TSAPObject"></typeparam>
     /// <returns></returns>
-    public SAPQuery<TSAPObject> Set<TSAPObject>() where TSAPObject : ISAPObject, new()
+    public SAPQuery<TSAPObject> Query<TSAPObject>() where TSAPObject : ISAPObject, new()
         => new(this, GetResourceName<TSAPObject>());
 
     /// <summary>
