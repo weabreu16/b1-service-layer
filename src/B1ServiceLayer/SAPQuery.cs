@@ -1,6 +1,9 @@
 ﻿using RestSharp;
 using System.Linq.Expressions;
 using B1ServiceLayer.Models;
+using B1ServiceLayer.Enums;
+using B1ServiceLayer.Interfaces;
+using B1ServiceLayer.Extensions;
 
 namespace B1ServiceLayer;
 
@@ -15,6 +18,9 @@ public class SAPQuery<T>
     private string? _select;
     private string? _filter;
     private string? _orderBy;
+    private readonly List<string>? _aggregateFields;
+
+    private List<string> AggregateFields => _aggregateFields is null ? new() : _aggregateFields;
 
     internal SAPQuery(B1Service sapService, string resourceName)
     {
@@ -145,8 +151,49 @@ public class SAPQuery<T>
         request.AddQueryParameter("$apply", applyStatement, false);
 
         var response = await Provider.ExecuteAsync<SapResponse<TResult>>(request, cancellationToken);
-
         return response!.Value;
+    }
+
+    public SAPQuery<T> Aggregate<TField>(Expression<Func<T, TField>> selector, AggregateOperation operation, string? resultFieldName = null)
+    {
+        ArgumentNullException.ThrowIfNull(selector, nameof(selector));
+
+        Aggregate(ExtractProperty(selector.Body), operation, resultFieldName);
+        return this;
+    }
+
+    public ICollection<TResult> ExecuteApply<TResult>()
+        => ExecuteApplyAsync<TResult>().GetAwaiter().GetResult();
+
+    public async Task<ICollection<TResult>> ExecuteApplyAsync<TResult>(CancellationToken cancellationToken = default)
+    {
+        string? applyStatement = GetApplyStatement();
+
+        if (string.IsNullOrWhiteSpace(applyStatement))
+            throw new InvalidOperationException("There is no aggregate or groupby operations");
+
+        var request = BuildRequest();
+
+        request.AddQueryParameter("$apply", applyStatement, false);
+
+        var result = await Provider.ExecuteAsync<SapResponse<TResult>>(request, cancellationToken);
+
+        if (result is null)
+            return Array.Empty<TResult>();
+
+        return result.Value;
+    }
+
+    private void Aggregate(string targetField, AggregateOperation operation, string? resultFieldName = null)
+        => AggregateFields.Add($"{targetField} with {operation.GetValue()} as {resultFieldName ?? targetField}");
+
+    private string? GetAggregateStatement() => _aggregateFields is null || _aggregateFields.Count == 0 ? null : string.Join(',', AggregateFields);
+
+    private string? GetApplyStatement()
+    {
+        string? aggregate = GetAggregateStatement();
+
+        return aggregate;
     }
 
     private static string ExtractProperty(Expression expression)
