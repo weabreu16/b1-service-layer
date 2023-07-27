@@ -2,7 +2,7 @@
 
 namespace B1ServiceLayer.Models;
 
-public class Paged<T>
+public class ValueCollection<T>
 {
     [JsonPropertyName("@odata.count")]
     public int Count { get; set; }

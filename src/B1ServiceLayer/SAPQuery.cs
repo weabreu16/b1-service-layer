@@ -135,11 +135,11 @@ public class SAPQuery<T>
         return response.Value;
     }
 
-    public Paged<T>? GetWithCount()
+    public ValueCollection<T>? GetWithCount()
         => GetWithCountAsync().GetAwaiter().GetResult();
 
-    public async Task<Paged<T>?> GetWithCountAsync()
-        => await Provider.ExecuteAsync<Paged<T>>(BuildRequest(includeInlineCount: true));
+    public async Task<ValueCollection<T>?> GetWithCountAsync()
+        => await Provider.ExecuteAsync<ValueCollection<T>>(BuildRequest(includeInlineCount: true));
 
     public ICollection<TResult> Apply<TResult>(string applyStatement)
         => ApplyAsync<TResult>(applyStatement).GetAwaiter().GetResult();
