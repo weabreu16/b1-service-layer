@@ -6,7 +6,7 @@ using B1ServiceLayer.Extensions;
 
 namespace B1ServiceLayer;
 
-public class SAPQuery<T>
+public class SAPQuery<TSAPObject>
 {
     public B1Service Provider { get; }
     public string ResourceName { get; }
@@ -40,19 +40,19 @@ public class SAPQuery<T>
         _orderBy = orderBy;
     }
 
-    public SAPQuery<T> Where(string predicate)
+    public SAPQuery<TSAPObject> Where(string predicate)
     {
         _filter = predicate;
         return this;
     }
 
-    public SAPQuery<T> Where(Expression<Func<T, bool>> predicate)
+    public SAPQuery<TSAPObject> Where(Expression<Func<TSAPObject, bool>> predicate)
     {
         _filter = SAPExpressionSerializer.Serialize(predicate.Body);
         return this;
     }
 
-    public SAPQuery<TResult> Select<TResult>(Expression<Func<T, TResult>> predicate)
+    public SAPQuery<TResult> Select<TResult>(Expression<Func<TSAPObject, TResult>> predicate)
     {
         if (predicate.Body is MemberExpression memberExpression)
             _select = memberExpression.Member.Name;
@@ -63,46 +63,46 @@ public class SAPQuery<T>
         return new SAPQuery<TResult>(Provider, ResourceName, _isPaginated, _top, _skip, _select, _filter, _orderBy);
     }
 
-    public SAPQuery<T> Top(int qty)
+    public SAPQuery<TSAPObject> Top(int qty)
     {
         _top = qty;
         return this;
     }
 
-    public SAPQuery<T> Skip(int qty)
+    public SAPQuery<TSAPObject> Skip(int qty)
     {
         _skip = qty;
         return this;
     }
 
-    public SAPQuery<T> NoPaginate()
+    public SAPQuery<TSAPObject> NoPaginate()
     {
         _isPaginated = false;
         return this;
     }
 
-    public SAPQuery<T> OrderBy(string orderBy)
+    public SAPQuery<TSAPObject> OrderBy(string orderBy)
     {
         _orderBy = orderBy;
 
         return this;
     }
 
-    public SAPQuery<T> OrderBy(Expression<Func<T, object?>> predicate)
+    public SAPQuery<TSAPObject> OrderBy(Expression<Func<TSAPObject, object?>> predicate)
     {
         _orderBy = $"{ExtractProperty(predicate.Body)} asc";
 
         return this;
     }
 
-    public SAPQuery<T> OrderByDesc(Expression<Func<T, object?>> predicate)
+    public SAPQuery<TSAPObject> OrderByDesc(Expression<Func<TSAPObject, object?>> predicate)
     {
         _orderBy = $"{ExtractProperty(predicate.Body)} desc";
 
         return this;
     }
 
-    public SAPQuery<T> ThenOrderBy(Expression<Func<T, object?>> predicate)
+    public SAPQuery<TSAPObject> ThenOrderBy(Expression<Func<TSAPObject, object?>> predicate)
     {
         if (string.IsNullOrEmpty(_orderBy))
             throw new InvalidOperationException($"Can't add secondary order by statement without the main statement, use {nameof(OrderBy)} instead");
@@ -112,7 +112,7 @@ public class SAPQuery<T>
         return this;
     }
 
-    public SAPQuery<T> ThenOrderByDesc(Expression<Func<T, object?>> predicate)
+    public SAPQuery<TSAPObject> ThenOrderByDesc(Expression<Func<TSAPObject, object?>> predicate)
     {
         if (string.IsNullOrEmpty(_orderBy))
             throw new InvalidOperationException($"Can't add secondary order by statement without the main statement, use {nameof(OrderByDesc)} instead");
@@ -122,24 +122,24 @@ public class SAPQuery<T>
         return this;
     }
 
-    public ICollection<T> Get()
+    public ICollection<TSAPObject> Get()
         => GetAsync().GetAwaiter().GetResult();
 
-    public async Task<ICollection<T>> GetAsync()
+    public async Task<ICollection<TSAPObject>> GetAsync()
     {
-        var response = await Provider.ExecuteAsync<SapResponse<T>>(BuildRequest());
+        var response = await Provider.ExecuteAsync<SapResponse<TSAPObject>>(BuildRequest());
 
         if (response is null)
-            return Array.Empty<T>();
+            return Array.Empty<TSAPObject>();
 
         return response.Value;
     }
 
-    public ValueCollection<T>? GetWithCount()
+    public ValueCollection<TSAPObject>? GetWithCount()
         => GetWithCountAsync().GetAwaiter().GetResult();
 
-    public async Task<ValueCollection<T>?> GetWithCountAsync()
-        => await Provider.ExecuteAsync<ValueCollection<T>>(BuildRequest(includeInlineCount: true));
+    public async Task<ValueCollection<TSAPObject>?> GetWithCountAsync()
+        => await Provider.ExecuteAsync<ValueCollection<TSAPObject>>(BuildRequest(includeInlineCount: true));
 
     public ICollection<TResult> Apply<TResult>(string applyStatement)
         => ApplyAsync<TResult>(applyStatement).GetAwaiter().GetResult();
@@ -154,43 +154,43 @@ public class SAPQuery<T>
         return response!.Value;
     }
 
-    public SAPQuery<T> Sum<TField>(string resultFieldName, Expression<Func<T, TField>> selector)
+    public SAPQuery<TSAPObject> Sum<TField>(string resultFieldName, Expression<Func<TSAPObject, TField>> selector)
         => Aggregate(selector, AggregateOperation.Sum, resultFieldName);
 
-    public SAPQuery<T> Sum<TField>(Expression<Func<T, TField>> selector)
+    public SAPQuery<TSAPObject> Sum<TField>(Expression<Func<TSAPObject, TField>> selector)
         => Aggregate(selector, AggregateOperation.Sum);
 
-    public SAPQuery<T> Average<TField>(string resultFieldName, Expression<Func<T, TField>> selector)
+    public SAPQuery<TSAPObject> Average<TField>(string resultFieldName, Expression<Func<TSAPObject, TField>> selector)
         => Aggregate(selector, AggregateOperation.Average, resultFieldName);
 
-    public SAPQuery<T> Average<TField>(Expression<Func<T, TField>> selector)
+    public SAPQuery<TSAPObject> Average<TField>(Expression<Func<TSAPObject, TField>> selector)
         => Aggregate(selector, AggregateOperation.Average);
 
-    public SAPQuery<T> Max<TField>(string resultFieldName, Expression<Func<T, TField>> selector)
+    public SAPQuery<TSAPObject> Max<TField>(string resultFieldName, Expression<Func<TSAPObject, TField>> selector)
         => Aggregate(selector, AggregateOperation.Max, resultFieldName);
 
-    public SAPQuery<T> Max<TField>(Expression<Func<T, TField>> selector)
+    public SAPQuery<TSAPObject> Max<TField>(Expression<Func<TSAPObject, TField>> selector)
         => Aggregate(selector, AggregateOperation.Max);
 
-    public SAPQuery<T> Min<TField>(string resultFieldName, Expression<Func<T, TField>> selector)
+    public SAPQuery<TSAPObject> Min<TField>(string resultFieldName, Expression<Func<TSAPObject, TField>> selector)
         => Aggregate(selector, AggregateOperation.Min, resultFieldName);
 
-    public SAPQuery<T> Min<TField>(Expression<Func<T, TField>> selector)
+    public SAPQuery<TSAPObject> Min<TField>(Expression<Func<TSAPObject, TField>> selector)
         => Aggregate(selector, AggregateOperation.Min);
 
-    public SAPQuery<T> CountDistinct<TField>(string resultFieldName, Expression<Func<T, TField>> selector)
+    public SAPQuery<TSAPObject> CountDistinct<TField>(string resultFieldName, Expression<Func<TSAPObject, TField>> selector)
         => Aggregate(selector, AggregateOperation.CountDistinct, resultFieldName);
 
-    public SAPQuery<T> CountDistinct<TField>(Expression<Func<T, TField>> selector)
+    public SAPQuery<TSAPObject> CountDistinct<TField>(Expression<Func<TSAPObject, TField>> selector)
         => Aggregate(selector, AggregateOperation.CountDistinct);
 
-    public SAPQuery<T> Count<TField>(string resultFieldName, Expression<Func<T, TField>> selector)
+    public SAPQuery<TSAPObject> Count<TField>(string resultFieldName, Expression<Func<TSAPObject, TField>> selector)
         => Aggregate(selector, AggregateOperation.Count, resultFieldName);
 
-    public SAPQuery<T> Count<TField>(Expression<Func<T, TField>> selector)
+    public SAPQuery<TSAPObject> Count<TField>(Expression<Func<TSAPObject, TField>> selector)
         => Aggregate(selector, AggregateOperation.Count);
 
-    public SAPQuery<T> Aggregate<TField>(Expression<Func<T, TField>> selector, AggregateOperation operation, string? resultFieldName = null)
+    public SAPQuery<TSAPObject> Aggregate<TField>(Expression<Func<TSAPObject, TField>> selector, AggregateOperation operation, string? resultFieldName = null)
     {
         ArgumentNullException.ThrowIfNull(selector, nameof(selector));
 
@@ -198,7 +198,7 @@ public class SAPQuery<T>
         return this;
     }
 
-    public SAPQuery<T> GroupBy<TField>(Expression<Func<T, TField>> selector)
+    public SAPQuery<TSAPObject> GroupBy<TField>(Expression<Func<TSAPObject, TField>> selector)
     {
         if (selector.Body is MemberExpression memberExpression)
             _groupBy = memberExpression.Member.Name;
@@ -231,10 +231,10 @@ public class SAPQuery<T>
         return result.Value;
     }
 
-    public ICollection<TResult> ExecuteApply<TResult>(Expression<Func<T, TResult>> typeBuilderStatement)
+    public ICollection<TResult> ExecuteApply<TResult>(Expression<Func<TSAPObject, TResult>> typeBuilderStatement)
         => ExecuteApply<TResult>();
 
-    public async Task<ICollection<TResult>> ExecuteApplyAsync<TResult>(Expression<Func<T, TResult>> typeBuilderStatement, CancellationToken cancellationToken = default)
+    public async Task<ICollection<TResult>> ExecuteApplyAsync<TResult>(Expression<Func<TSAPObject, TResult>> typeBuilderStatement, CancellationToken cancellationToken = default)
         => await ExecuteApplyAsync<TResult>(cancellationToken);
 
     private void Aggregate(string targetField, AggregateOperation operation, string? resultFieldName = null)
