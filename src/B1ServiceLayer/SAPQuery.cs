@@ -154,6 +154,42 @@ public class SAPQuery<T>
         return response!.Value;
     }
 
+    public SAPQuery<T> Sum<TField>(string resultFieldName, Expression<Func<T, TField>> selector)
+        => Aggregate(selector, AggregateOperation.Sum, resultFieldName);
+
+    public SAPQuery<T> Sum<TField>(Expression<Func<T, TField>> selector)
+        => Aggregate(selector, AggregateOperation.Sum);
+
+    public SAPQuery<T> Average<TField>(string resultFieldName, Expression<Func<T, TField>> selector)
+        => Aggregate(selector, AggregateOperation.Average, resultFieldName);
+
+    public SAPQuery<T> Average<TField>(Expression<Func<T, TField>> selector)
+        => Aggregate(selector, AggregateOperation.Average);
+
+    public SAPQuery<T> Max<TField>(string resultFieldName, Expression<Func<T, TField>> selector)
+        => Aggregate(selector, AggregateOperation.Max, resultFieldName);
+
+    public SAPQuery<T> Max<TField>(Expression<Func<T, TField>> selector)
+        => Aggregate(selector, AggregateOperation.Max);
+
+    public SAPQuery<T> Min<TField>(string resultFieldName, Expression<Func<T, TField>> selector)
+        => Aggregate(selector, AggregateOperation.Min, resultFieldName);
+
+    public SAPQuery<T> Min<TField>(Expression<Func<T, TField>> selector)
+        => Aggregate(selector, AggregateOperation.Min);
+
+    public SAPQuery<T> CountDistinct<TField>(string resultFieldName, Expression<Func<T, TField>> selector)
+        => Aggregate(selector, AggregateOperation.CountDistinct, resultFieldName);
+
+    public SAPQuery<T> CountDistinct<TField>(Expression<Func<T, TField>> selector)
+        => Aggregate(selector, AggregateOperation.CountDistinct);
+
+    public SAPQuery<T> Count<TField>(string resultFieldName, Expression<Func<T, TField>> selector)
+        => Aggregate(selector, AggregateOperation.Count, resultFieldName);
+
+    public SAPQuery<T> Count<TField>(Expression<Func<T, TField>> selector)
+        => Aggregate(selector, AggregateOperation.Count);
+
     public SAPQuery<T> Aggregate<TField>(Expression<Func<T, TField>> selector, AggregateOperation operation, string? resultFieldName = null)
     {
         ArgumentNullException.ThrowIfNull(selector, nameof(selector));
