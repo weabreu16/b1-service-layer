@@ -2,7 +2,6 @@
 using System.Linq.Expressions;
 using B1ServiceLayer.Models;
 using B1ServiceLayer.Enums;
-using B1ServiceLayer.Interfaces;
 using B1ServiceLayer.Extensions;
 
 namespace B1ServiceLayer;
@@ -19,6 +18,7 @@ public class SAPQuery<T>
     private string? _filter;
     private string? _orderBy;
     private List<string>? _aggregateFields;
+    private string? _groupBy;
 
     private List<string> AggregateFields => _aggregateFields ??= new();
 
@@ -198,6 +198,17 @@ public class SAPQuery<T>
         return this;
     }
 
+    public SAPQuery<T> GroupBy<TField>(Expression<Func<T, TField>> selector)
+    {
+        if (selector.Body is MemberExpression memberExpression)
+            _groupBy = memberExpression.Member.Name;
+
+        if (selector.Body is NewExpression newExpression && newExpression.Members is not null)
+            _groupBy = string.Join(',', newExpression.Members.Select(e => e.Name));
+
+        return this;
+    }
+
     public ICollection<TResult> ExecuteApply<TResult>()
         => ExecuteApplyAsync<TResult>().GetAwaiter().GetResult();
 
@@ -223,13 +234,20 @@ public class SAPQuery<T>
     private void Aggregate(string targetField, AggregateOperation operation, string? resultFieldName = null)
         => AggregateFields.Add($"{targetField} with {operation.GetValue()} as {resultFieldName ?? targetField}");
 
-    private string? GetAggregateStatement() => _aggregateFields is null || _aggregateFields.Count == 0 ? null : string.Join(',', AggregateFields);
+    private string? GetAggregateStatement() => _aggregateFields is null || _aggregateFields.Count == 0 ? null : $"aggregate({string.Join(',', _aggregateFields)})";
+
+    private string? GetGroupByStatement() => string.IsNullOrWhiteSpace(_groupBy) ? null : $"groupby(({_groupBy}))";
 
     private string? GetApplyStatement()
     {
         string? aggregate = GetAggregateStatement();
+        string? groupby = GetGroupByStatement();
 
-        return aggregate;
+        if (aggregate is null) return groupby;
+
+        if (groupby is null) return aggregate;
+
+        return $"{aggregate}/{groupby}";
     }
 
     private static string ExtractProperty(Expression expression)
