@@ -231,6 +231,12 @@ public class SAPQuery<T>
         return result.Value;
     }
 
+    public ICollection<TResult> ExecuteApply<TResult>(Expression<Func<T, TResult>> typeBuilderStatement)
+        => ExecuteApply<TResult>();
+
+    public async Task<ICollection<TResult>> ExecuteApplyAsync<TResult>(Expression<Func<T, TResult>> typeBuilderStatement, CancellationToken cancellationToken = default)
+        => await ExecuteApplyAsync<TResult>(cancellationToken);
+
     private void Aggregate(string targetField, AggregateOperation operation, string? resultFieldName = null)
         => AggregateFields.Add($"{targetField} with {operation.GetValue()} as {resultFieldName ?? targetField}");
 
