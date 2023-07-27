@@ -18,9 +18,9 @@ public class SAPQuery<T>
     private string? _select;
     private string? _filter;
     private string? _orderBy;
-    private readonly List<string>? _aggregateFields;
+    private List<string>? _aggregateFields;
 
-    private List<string> AggregateFields => _aggregateFields is null ? new() : _aggregateFields;
+    private List<string> AggregateFields => _aggregateFields ??= new();
 
     internal SAPQuery(B1Service sapService, string resourceName)
     {
