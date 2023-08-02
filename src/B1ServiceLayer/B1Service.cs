@@ -6,6 +6,7 @@ using System.Text.Json.Serialization;
 using B1ServiceLayer.Exceptions;
 using B1ServiceLayer.Extensions;
 using B1ServiceLayer.Interfaces;
+using B1ServiceLayer.Queries;
 
 namespace B1ServiceLayer;
 
@@ -44,7 +45,7 @@ public class B1Service: IDisposable
     /// </summary>
     /// <typeparam name="TSAPObject"></typeparam>
     /// <returns></returns>
-    public SAPQuery<TSAPObject> Query<TSAPObject>() where TSAPObject : ISAPObject, new()
+    public SAPQuery Query<TSAPObject>() where TSAPObject : ISAPObject, new()
         => new(this, GetResourceName<TSAPObject>());
 
     /// <summary>
