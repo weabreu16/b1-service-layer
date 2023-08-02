@@ -9,6 +9,11 @@ using B1ServiceLayer.Interfaces;
 using B1ServiceLayer.Queries;
 using B1ServiceLayer.Attributes;
 using System.Linq.Expressions;
+using System.Reflection;
+using B1ServiceLayer.Expressions;
+using B1ServiceLayer.Helpers;
+using B1ServiceLayer.Visitors;
+using B1ServiceLayer.Models;
 
 namespace B1ServiceLayer;
 
@@ -27,6 +32,12 @@ public class B1Service: IAsyncQueryProvider, IDisposable
     };
 
     private static readonly Type _sapEntityType = typeof(SAPEntityAttribute);
+    private static readonly MethodInfo _selectMethod = typeof(Enumerable).GetMethods(BindingFlags.Public | BindingFlags.Static)
+        .First(e => e.Name == "Select");
+    private static readonly MethodInfo _executeMethod
+        = typeof(B1Service).GetMethods().First(e => e.Name == nameof(Execute));
+    private static readonly MethodInfo _asyncExecuteMethod
+        = typeof(B1Service).GetMethod(nameof(ExecuteAsync))!;
 
     /// <summary>
     /// </summary>
@@ -111,13 +122,23 @@ public class B1Service: IAsyncQueryProvider, IDisposable
     /// <summary>
     /// LogIn against SAP B1 Service Layer and execute a request.
     /// </summary>
-    /// <typeparam name="T"></typeparam>
+    /// <typeparam name="TResult"></typeparam>
+    /// <param name="request"></param>
+    /// <returns>The expected data.</returns>
+    /// <exception cref="SAPException"></exception>
+    public TResult? Execute<TResult>(RestRequest request)
+        => ExecuteAsync<TResult>(request).GetAwaiter().GetResult();
+
+    /// <summary>
+    /// LogIn against SAP B1 Service Layer and execute a request.
+    /// </summary>
+    /// <typeparam name="TResult"></typeparam>
     /// <param name="request"></param>
     /// <param name="cancellationToken"></param>
     /// <returns>The expected data.</returns>
     /// <exception cref="SAPException"></exception>
-    public async Task<T?> ExecuteAsync<T>(RestRequest request, CancellationToken cancellationToken = default)
-        => (await RequestAsync<T>(request, cancellationToken)).Data;
+    public async Task<TResult?> ExecuteAsync<TResult>(RestRequest request, CancellationToken cancellationToken = default)
+        => (await RequestAsync<TResult>(request, cancellationToken)).Data;
 
     /// <summary>
     /// LogIn against SAP B1 Service Layer and execute a request.
@@ -126,11 +147,11 @@ public class B1Service: IAsyncQueryProvider, IDisposable
     /// <param name="cancellationToken"></param>
     /// <returns>A <see cref="RestResponse{T}"/> instance with the expected data.</returns>
     /// <exception cref="SAPException"></exception>
-    public async Task<RestResponse<T>> RequestAsync<T>(RestRequest request, CancellationToken cancellationToken = default)
+    public async Task<RestResponse<TResult>> RequestAsync<TResult>(RestRequest request, CancellationToken cancellationToken = default)
     {
         await LogInAsync();
 
-        var res = await _restClient.ExecuteAsync<T>(request, cancellationToken);
+        var res = await _restClient.ExecuteAsync<TResult>(request, cancellationToken);
 
         res.ThrowIfFailed();
 
@@ -230,28 +251,86 @@ public class B1Service: IAsyncQueryProvider, IDisposable
         }
     }
 
-    public Task<TResult> ExecuteAsync<TResult>(Expression expression, CancellationToken cancellationToken = default)
+    async Task<TResult> IAsyncQueryProvider.ExecuteAsync<TResult>(Expression expression, CancellationToken cancellationToken)
+    {
+        var query = (SAPQueryExpression)new SAPQueryExpressionVisitor().Visit(expression);
+
+        var request = RequestFactory.Create(query);
+
+        if (query.Select is not null && query.Select.Body is MemberExpression)
+        {
+            var listType = typeof(List<>).MakeGenericType(query.Resources.First().Key);
+            var genericResponseType = typeof(SAPResponse<>).MakeGenericType(listType);
+            dynamic selectResponse = _asyncExecuteMethod.MakeGenericMethod(genericResponseType).Invoke(this, new object[] { request, cancellationToken })!;
+            await selectResponse;
+            selectResponse = selectResponse.GetAwaiter().GetResult();
+
+            return ExecuteSelect<TResult>(query.ElementType, selectResponse.Value, query.Select);
+        }
+
+        if (query.IsCounting || query.InlineCount)
+            return (await ExecuteAsync<TResult>(request, cancellationToken))!;
+
+        var response = await ExecuteAsync<SAPResponse<TResult>>(request, cancellationToken);
+
+        return response!.Value!;
+    }
+
+    IQueryable IQueryProvider.CreateQuery(Expression expression)
     {
         throw new NotImplementedException();
     }
 
-    public IQueryable CreateQuery(Expression expression)
+    IQueryable<TElement> IQueryProvider.CreateQuery<TElement>(Expression expression)
+        => new SAPQueryable<TElement>(this, expression);
+
+    object? IQueryProvider.Execute(Expression expression)
+        => throw new NotImplementedException();
+
+    TResult IQueryProvider.Execute<TResult>(Expression expression)
     {
-        throw new NotImplementedException();
+        var query = (SAPQueryExpression)new SAPQueryExpressionVisitor().Visit(expression);
+
+        if (expression.NodeType == ExpressionType.Call && query.QueryableExecutor is not null)
+        {
+            var queryableMethodCall = Expression.Call(
+                query.QueryableExecutor.MakeGenericMethod(typeof(TResult)),
+                Expression.Constant(
+                    ((IQueryProvider)this)
+                        .Execute<IEnumerable<TResult>>(query)));
+
+            return Expression.Lambda<Func<TResult>>(queryableMethodCall).Compile()();
+        }
+
+        var request = RequestFactory.Create(query);
+
+        if (query.Select is not null && query.Select.Body is MemberExpression)
+        {
+            var listType = typeof(List<>).MakeGenericType(query.Resources.First().Key);
+            var genericResponseType = typeof(SAPResponse<>).MakeGenericType(listType);
+            dynamic response = _executeMethod.MakeGenericMethod(genericResponseType).Invoke(this, new object[] { request })!;
+
+            return ExecuteSelect<TResult>(query.ElementType, response.Value, query.Select);
+        }
+
+        if (query.IsCounting || query.InlineCount)
+            return Execute<TResult>(request)!;
+
+        return Execute<SAPResponse<TResult>>(request)!.Value!;
     }
 
-    public IQueryable<TElement> CreateQuery<TElement>(Expression expression)
+    private static TResult ExecuteSelect<TResult>(Type parameterType, dynamic source, LambdaExpression selector)
     {
-        throw new NotImplementedException();
-    }
+        var resultTypeGenericArguments = typeof(TResult).GetGenericArguments();
 
-    public object? Execute(Expression expression)
-    {
-        throw new NotImplementedException();
-    }
+        if (!resultTypeGenericArguments.Any())
+            throw new InvalidOperationException($"{typeof(TResult).Name} has no generic arguments");
 
-    public TResult Execute<TResult>(Expression expression)
-    {
-        throw new NotImplementedException();
+        var call = Expression.Call(_selectMethod.MakeGenericMethod(parameterType, resultTypeGenericArguments[0]), Expression.Constant(source), selector);
+        LambdaExpression lambda = Expression.Lambda<Func<IEnumerable<dynamic>>>(call);
+
+        var func = lambda.Compile();
+
+        return (TResult)func.DynamicInvoke()!;
     }
 }

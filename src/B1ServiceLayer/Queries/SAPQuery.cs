@@ -91,9 +91,9 @@ public class SAPQuery
 
     public async Task<ICollection<TResult>> ExecuteAsync<TResult>()
     {
-        var result = await Provider.ExecuteAsync<SapResponse<TResult>>(BuildRequest());
+        var result = await Provider.ExecuteAsync<SAPResponse<List<TResult>>>(BuildRequest());
 
-        return result is not null ? result.Value : Array.Empty<TResult>();
+        return result?.Value is not null ? result.Value : Array.Empty<TResult>();
     }
 
     internal RestRequest BuildRequest()
