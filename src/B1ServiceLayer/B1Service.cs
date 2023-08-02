@@ -45,6 +45,14 @@ public class B1Service: IAsyncQueryProvider, IDisposable
     }
 
     /// <summary>
+    /// Create a new typeless SAP query for target <paramref name="entity"/> resource name.
+    /// </summary>
+    /// <param name="entity"></param>
+    /// <returns></returns>
+    public SAPQuery Query(string entity)
+        => new(this, entity);
+
+    /// <summary>
     /// Create a new SAP queryable for target <typeparamref name="TSAPEntity"/>.
     /// </summary>
     /// <typeparam name="TSAPEntity"></typeparam>
