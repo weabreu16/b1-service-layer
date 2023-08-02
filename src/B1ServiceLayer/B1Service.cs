@@ -53,6 +53,20 @@ public class B1Service: IAsyncQueryProvider, IDisposable
         => new(this, entity);
 
     /// <summary>
+    /// Create a new typeless SAP query with cross join applied.
+    /// </summary>
+    /// <remarks>
+    /// Entities names should be separated by (,).
+    /// Example:
+    ///     <example>Orders, BusinessPartners</example>
+    /// </remarks>
+    /// <param name="entities"></param>
+    /// <param name="expands"></param>
+    /// <returns></returns>
+    public SAPQuery CrossJoin(string entities, params string[] expands)
+        => new SAPQuery(this, $"$crossjoin({entities})").Expand(expands);
+
+    /// <summary>
     /// Create a new SAP queryable for target <typeparamref name="TSAPEntity"/>.
     /// </summary>
     /// <typeparam name="TSAPEntity"></typeparam>
