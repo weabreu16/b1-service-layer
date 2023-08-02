@@ -17,7 +17,7 @@ public static partial class B1ServiceExtensions
     /// <param name="key"></param>
     /// <returns>An instance of <typeparamref name="TSAPObject"/> or <see langword="null"/> if does not exist.</returns>
     public static TSAPObject? Find<TSAPObject>(this B1Service sap, object key)
-        where TSAPObject : ISAPObject, new()
+        where TSAPObject : class
             => sap.FindAsync<TSAPObject>(key).GetAwaiter().GetResult();
 
     /// <summary>
@@ -33,7 +33,7 @@ public static partial class B1ServiceExtensions
     /// <param name="cancellationToken"></param>
     /// <returns>An instance of <typeparamref name="TSAPObject"/> or <see langword="null"/> if does not exist.</returns>
     public static async Task<TSAPObject?> FindAsync<TSAPObject>(this B1Service sap, object key, CancellationToken cancellationToken = default) 
-        where TSAPObject : ISAPObject, new()
+        where TSAPObject : class
     {
         ArgumentNullException.ThrowIfNull(key, nameof(key));
 

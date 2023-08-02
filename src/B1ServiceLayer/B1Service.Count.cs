@@ -12,7 +12,7 @@ public static partial class B1ServiceExtensions
     /// <typeparam name="T"></typeparam>
     /// <param name="sap"></param>
     /// <param name="predicate">Expression to get the count of entities that satisfies the conditions.</param>
-    public static int Count<T>(this B1Service sap, Expression<Func<T, bool>>? predicate = null) where T : ISAPObject, new()
+    public static int Count<T>(this B1Service sap, Expression<Func<T, bool>>? predicate = null) where T : class
         => sap.CountAsync(predicate).GetAwaiter().GetResult();
 
     /// <summary>
@@ -24,7 +24,7 @@ public static partial class B1ServiceExtensions
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
     public static async Task<int> CountAsync<T>(this B1Service sap, Expression<Func<T, bool>>? predicate = null, CancellationToken cancellationToken = default) 
-        where T : ISAPObject, new()
+        where T : class
     {
         RestRequest request = new($"{B1Service.GetResourceName<T>()}/$count");
 

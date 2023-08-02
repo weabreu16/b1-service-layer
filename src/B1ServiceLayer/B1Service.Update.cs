@@ -24,7 +24,7 @@ public static partial class B1ServiceExtensions
     /// <param name="usePut"></param>
     /// <returns>A <see cref="RestResponse"/> instance.</returns>
     public static RestResponse Update<TSAPObject>(this B1Service sap, object key, object data, bool usePut = false)
-        where TSAPObject : ISAPObject, new()
+        where TSAPObject : class
             => sap.UpdateAsync<TSAPObject>(key, data, usePut).GetAwaiter().GetResult();
 
     /// <summary>
@@ -47,7 +47,7 @@ public static partial class B1ServiceExtensions
     /// <param name="cancellationToken"></param>
     /// <returns>A <see cref="RestResponse"/> instance.</returns>
     public static async Task<RestResponse> UpdateAsync<TSAPObject>(this B1Service sap, object key, object data, bool usePut = false, CancellationToken cancellationToken = default)
-        where TSAPObject : ISAPObject, new()
+        where TSAPObject : class
     {
         ArgumentNullException.ThrowIfNull(key, nameof(key));
         ArgumentNullException.ThrowIfNull(data, nameof(data));

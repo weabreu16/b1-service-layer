@@ -17,7 +17,7 @@ public static partial class B1ServiceExtensions
     /// <param name="key"></param>
     /// <returns>A <see cref="RestResponse"/> instance.</returns>
     public static RestResponse Delete<TSAPObject>(this B1Service sap, object key)
-        where TSAPObject : ISAPObject, new()
+        where TSAPObject : class
             => sap.DeleteAsync<TSAPObject>(key).GetAwaiter().GetResult();
 
     /// <summary>
@@ -33,7 +33,7 @@ public static partial class B1ServiceExtensions
     /// <param name="cancellationToken"></param>
     /// <returns>A <see cref="RestResponse"/> instance.</returns>
     public static async Task<RestResponse> DeleteAsync<TSAPObject>(this B1Service sap, object key, CancellationToken cancellationToken = default) 
-        where TSAPObject : ISAPObject, new()
+        where TSAPObject : class
     {
         ArgumentNullException.ThrowIfNull(key, nameof(key));
 

@@ -7,6 +7,8 @@ using B1ServiceLayer.Exceptions;
 using B1ServiceLayer.Extensions;
 using B1ServiceLayer.Interfaces;
 using B1ServiceLayer.Queries;
+using B1ServiceLayer.Attributes;
+using System.Linq.Expressions;
 
 namespace B1ServiceLayer;
 
@@ -14,7 +16,7 @@ namespace B1ServiceLayer;
 /// <para>Service that establish connection with SAP B1 Service Layer.</para>
 /// <para>Each method create a new session with the Service Layer.</para>
 /// </summary>
-public class B1Service: IDisposable
+public class B1Service: IAsyncQueryProvider, IDisposable
 {
     private readonly RestClient _restClient;
     private readonly ISAPCredentials _credentials;
@@ -23,6 +25,8 @@ public class B1Service: IDisposable
         PropertyNamingPolicy = null,
         Converters = { new JsonStringEnumConverter() }
     };
+
+    private static readonly Type _sapEntityType = typeof(SAPEntityAttribute);
 
     /// <summary>
     /// </summary>
@@ -41,12 +45,12 @@ public class B1Service: IDisposable
     }
 
     /// <summary>
-    /// Create a new SAP Query for target <typeparamref name="TSAPObject"/>.
+    /// Create a new SAP queryable for target <typeparamref name="TSAPEntity"/>.
     /// </summary>
-    /// <typeparam name="TSAPObject"></typeparam>
+    /// <typeparam name="TSAPEntity"></typeparam>
     /// <returns></returns>
-    public SAPQuery Query<TSAPObject>() where TSAPObject : ISAPObject, new()
-        => new(this, GetResourceName<TSAPObject>());
+    public IQueryable<TSAPEntity> Query<TSAPEntity>() where TSAPEntity : class
+        => new SAPQueryable<TSAPEntity>(this, GetResourceName<TSAPEntity>());
 
     /// <summary>
     /// Execute an http request against target resource name.
@@ -62,11 +66,11 @@ public class B1Service: IDisposable
         return await ExecuteAsync<TResult>(request);
     }
 
-    internal static RestRequest GetResourceRequest<T>(Method method = Method.Get) where T : ISAPObject, new()
-        => new($"{GetResourceName<T>()}", method);
+    internal static RestRequest GetResourceRequest<TSAPEntity>(Method method = Method.Get) where TSAPEntity : class
+        => new($"{GetResourceName<TSAPEntity>()}", method);
 
-    internal static RestRequest GetResourceRequest<T>(object key, Method method = Method.Get) where T : ISAPObject, new()
-        => new($"{GetResourceName<T>()}({SAPExpressionSerializer.GetValueAsQueryFormatted(key)})", method);
+    internal static RestRequest GetResourceRequest<TSAPEntity>(object key, Method method = Method.Get) where TSAPEntity : class
+        => new($"{GetResourceName<TSAPEntity>()}({SAPExpressionSerializer.GetValueAsQueryFormatted(key)})", method);
 
     internal static RestRequest GetResourceRequest(string resourceName, Method method = Method.Get)
         => new(resourceName, method);
@@ -74,8 +78,13 @@ public class B1Service: IDisposable
     internal static RestRequest GetResourceRequest(string resourceName, object key, Method method = Method.Get)
         => new($"{resourceName}({SAPExpressionSerializer.GetValueAsQueryFormatted(key)})", method);
 
-    internal static string GetResourceName<T>() where T : ISAPObject, new()
-        => new T().GetResourceName();
+    internal static string GetResourceName<TSAPEntity>() where TSAPEntity : class
+    {
+        var sapObject = (SAPEntityAttribute?)Attribute.GetCustomAttribute(typeof(TSAPEntity), _sapEntityType)
+            ?? throw new InvalidOperationException($"{typeof(TSAPEntity)} does not implement {_sapEntityType.Name}");
+
+        return sapObject.ResourceName;
+    }
 
     /// <summary>
     /// LogIn against SAP B1 Service Layer and execute a request.
@@ -197,5 +206,30 @@ public class B1Service: IDisposable
         {
             throw new SAPException(ex.Message, ex);
         }
+    }
+
+    public Task<TResult> ExecuteAsync<TResult>(Expression expression, CancellationToken cancellationToken = default)
+    {
+        throw new NotImplementedException();
+    }
+
+    public IQueryable CreateQuery(Expression expression)
+    {
+        throw new NotImplementedException();
+    }
+
+    public IQueryable<TElement> CreateQuery<TElement>(Expression expression)
+    {
+        throw new NotImplementedException();
+    }
+
+    public object? Execute(Expression expression)
+    {
+        throw new NotImplementedException();
+    }
+
+    public TResult Execute<TResult>(Expression expression)
+    {
+        throw new NotImplementedException();
     }
 }

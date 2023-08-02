@@ -20,7 +20,7 @@ public static partial class B1ServiceExtensions
     /// or <paramref name="noContent"/> is passed as <see langword="true"/>.
     /// </returns>
     public static TSAPObject? Create<TSAPObject>(this B1Service sap, object data, bool noContent = false)
-        where TSAPObject : ISAPObject, new()
+        where TSAPObject : class
             => sap.CreateAsync<TSAPObject>(data, noContent).GetAwaiter().GetResult();
 
     /// <summary>
@@ -39,7 +39,7 @@ public static partial class B1ServiceExtensions
     /// or <paramref name="noContent"/> is passed as <see langword="true"/>.
     /// </returns>
     public static async Task<TSAPObject?> CreateAsync<TSAPObject>(this B1Service sap, object data, bool noContent = false, CancellationToken cancellationToken = default) 
-        where TSAPObject : ISAPObject, new()
+        where TSAPObject : class
             => await sap.ExecuteAsync<TSAPObject>(BuildRequest<TSAPObject>(data, noContent), cancellationToken);
 
     /// <summary>
@@ -126,7 +126,7 @@ public static partial class B1ServiceExtensions
     }
 
     private static RestRequest BuildRequest<T>(object data, bool noContent = false)
-        where T: ISAPObject, new()
+        where T: class
     {
         var request = B1Service.GetResourceRequest<T>(Method.Post);
 
