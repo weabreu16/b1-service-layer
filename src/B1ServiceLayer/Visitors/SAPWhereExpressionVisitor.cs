@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
+using System.Reflection;
 using System.Text;
 
 namespace B1ServiceLayer.Visitors;
@@ -65,7 +66,24 @@ public class SAPWhereExpressionVisitor : ExpressionVisitor
 
     protected override Expression VisitMember(MemberExpression node)
     {
-        Append(node.Member.Name);
+        if (node.Expression is not null && node.Expression.NodeType == ExpressionType.Constant)
+        {
+            object? container = ((ConstantExpression)node.Expression).Value;
+            var member = node.Member;
+            object? value = null;
+
+            if (member is FieldInfo)
+            {
+                value = ((FieldInfo)member).GetValue(container);
+            }
+            else if (member is PropertyInfo)
+            {
+                value = ((PropertyInfo)member).GetValue(container, null);
+            }
+
+            Append(SAPExpressionSerializer.GetValueAsQueryFormatted(value));
+        }
+        else Append(node.Member.Name);
 
         return node;
     }
