@@ -72,13 +72,13 @@ public class SAPWhereExpressionVisitor : ExpressionVisitor
             var member = node.Member;
             object? value = null;
 
-            if (member is FieldInfo)
+            if (member is FieldInfo field)
             {
-                value = ((FieldInfo)member).GetValue(container);
+                value = field.GetValue(container);
             }
-            else if (member is PropertyInfo)
+            else if (member is PropertyInfo property)
             {
-                value = ((PropertyInfo)member).GetValue(container, null);
+                value = property.GetValue(container, null);
             }
 
             Append(SAPExpressionSerializer.GetValueAsQueryFormatted(value));
