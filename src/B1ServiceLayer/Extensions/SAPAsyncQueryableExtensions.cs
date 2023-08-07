@@ -58,4 +58,30 @@ public static class SAPAsyncQueryableExtensions
         this IQueryable<TSource> query,
         CancellationToken cancellationToken = default)
             => await query.SetInlineCount().ExecuteAsync<ValueCollection<TSource>>(cancellationToken);
+
+    /// <summary>
+    /// Execute a queryable that will return a list of <typeparamref name="TResult"/>.
+    /// </summary>
+    /// <remarks>
+    /// Queries with aggregation methods applied and cross join queries should be executed with this method.
+    /// </remarks>
+    /// <typeparam name="TSource"></typeparam>
+    /// <typeparam name="TResult"></typeparam>
+    /// <param name="query"></param>
+    /// <returns></returns>
+    public static async Task<List<TResult>> ExecuteQueryAsync<TSource, TResult>(this IQueryable<TSource> query)
+        => await query.ExecuteAsync<List<TResult>>();
+
+    /// <summary>
+    /// Execute a queryable that will return a list of <typeparamref name="TResult"/>.
+    /// </summary>
+    /// <remarks>
+    /// Queries with aggregation methods applied and cross join queries should be executed with this method.
+    /// </remarks>
+    /// <typeparam name="TSource"></typeparam>
+    /// <typeparam name="TResult"></typeparam>
+    /// <param name="query"></param>
+    /// <returns></returns>
+    public static async Task<List<TResult>> ExecuteQueryAsync<TSource, TResult>(this IQueryable<TSource> query, Expression<Func<TSource, TResult>> _)
+        => await query.ExecuteQueryAsync<TSource, TResult>();
 }
